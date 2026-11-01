@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import TypedDict
 
 ROOT_FILES = (
-    "README.md", "Makefile", "pyproject.toml", "uv.lock", "alembic.ini",
+    "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "Makefile", "pyproject.toml", "uv.lock", "alembic.ini",
     "compose.yaml", "compose.dev.yaml", "compose.local.yaml", ".env.example",
     ".gitignore", ".dockerignore",
 )

@@ -75,3 +75,52 @@ def test_cli_rejects_unsafe_manifest_before_mutating_any_file(tmp_path, manifest
     assert readme.read_text() == "Original product"
     assert existing.read_text() == "Original report"
     assert not destination.exists()
+
+
+def test_legal_notices_survive_public_export_and_source_release(tmp_path):
+    import hashlib
+    import json
+    import shutil
+    import subprocess
+    import sys
+    import tarfile
+
+    root = Path(__file__).resolve().parents[3]
+    source = tmp_path / "source"
+    source.mkdir()
+    legal_names = (
+        "LICENSE", "THIRD_PARTY_NOTICES.md", "apps/api/app/fonts/LICENSE",
+        "apps/web/public/licenses/Manrope-OFL.txt",
+    )
+    originals = {name: (root / name).read_bytes() for name in legal_names}
+    for name, data in originals.items():
+        target = source / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+    scripts = source / "scripts"
+    scripts.mkdir()
+    for name in ("export_public.py", "build_release.py"):
+        shutil.copyfile(root / "scripts" / name, scripts / name)
+    (source / "pyproject.toml").write_text('[project]\nversion = "0.0.0"\n')
+    catalog = source / "dist/skills/index.json"
+    catalog.parent.mkdir(parents=True)
+    catalog.write_text('{"skills": []}\n')
+
+    public = tmp_path / "public"
+    manifest = load_exporter().export(source, public, "a" * 40)
+    for name, data in originals.items():
+        assert (public / name).read_bytes() == data
+        assert manifest["files"][name] == {
+            "size": len(data), "sha256": hashlib.sha256(data).hexdigest(),
+        }
+
+    subprocess.run([sys.executable, str(scripts / "build_release.py")], check=True, capture_output=True)
+    archive = source / "dist/ucaselab-0.0.0.tar.gz"
+    first_build = archive.read_bytes()
+    with tarfile.open(archive) as release:
+        release_manifest = json.load(release.extractfile("ucaselab-0.0.0/release-manifest.json"))
+        for name, data in originals.items():
+            assert release.extractfile(f"ucaselab-0.0.0/{name}").read() == data
+            assert release_manifest["files"][name] == manifest["files"][name]
+    subprocess.run([sys.executable, str(scripts / "build_release.py")], check=True, capture_output=True)
+    assert archive.read_bytes() == first_build
