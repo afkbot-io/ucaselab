@@ -11,7 +11,7 @@ jobs:
           POSTGRES_PASSWORD: ucaselab-ci
           POSTGRES_DB: ucaselab
         ports: ['5432:5432']
-        options: --health-cmd 'pg_isready -U ucaselab' --health-interval 5s --health-timeout 5s --health-retries 10
+        options: --health-cmd "pg_isready -U ucaselab" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql+psycopg://ucaselab:ucaselab-ci@localhost:5432/ucaselab
       SECRET_KEY: ci-only-non-production-unique-long-secret-key
