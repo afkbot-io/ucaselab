@@ -19,6 +19,13 @@ jobs:
       ENVIRONMENT: development
     steps:
       - uses: actions/checkout@v4
+      - name: Validate Compose configuration
+        run: |
+          test ! -e .env
+          test ! -L .env
+          trap 'rm -f -- .env' EXIT
+          install -m 600 .env.example .env
+          docker compose --env-file .env.example config --quiet
       - uses: astral-sh/setup-uv@v6
         with:
           version: '0.10.9'
@@ -43,7 +50,6 @@ jobs:
       - run: npx playwright install --with-deps chromium firefox webkit
         working-directory: apps/web
       - run: npm run test:ui --prefix apps/web
-      - run: docker compose --env-file .env.example config --quiet
       - uses: actions/upload-artifact@v4
         if: always()
         with:
