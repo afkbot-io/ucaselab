@@ -1,0 +1,20 @@
+# Full container preview with local SMTP capture. Nothing is sent outside Mailpit.
+services:
+  api:
+    environment:
+      PUBLIC_URL: http://localhost:8080
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      COOKIE_SECURE: 'false'
+      ENVIRONMENT: development
+  worker:
+    environment:
+      PUBLIC_URL: http://localhost:8080
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      COOKIE_SECURE: 'false'
+      ENVIRONMENT: development
+  mailpit:
+    image: axllent/mailpit:v1.29
+    ports:
+      - '127.0.0.1:8029:8025'

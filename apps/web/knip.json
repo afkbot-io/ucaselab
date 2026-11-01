@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/main.tsx",
+    "src/styles.css",
+    "public/theme-init.js",
+    "e2e/*.spec.ts"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx,css}",
+    "e2e/**/*.ts"
+  ]
+}

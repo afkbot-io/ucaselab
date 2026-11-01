@@ -1,0 +1,10 @@
+services:
+  db:
+    ports:
+      - '127.0.0.1:54329:5432'
+  mailpit:
+    image: axllent/mailpit:v1.29
+    ports:
+      - '127.0.0.1:10259:1025'
+      - '127.0.0.1:8029:8025'
+    restart: unless-stopped

@@ -1,0 +1,13 @@
+.git
+.venv
+.env
+**/node_modules
+apps/web/dist
+output
+data
+**/__pycache__
+.pytest_cache
+.ruff_cache
+.playwright-cli
+dist/*.tar.gz
+dist/*.sha256

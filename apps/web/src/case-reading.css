@@ -1,0 +1,267 @@
+/* Reading layout is independent of the discussion drawer's open state. */
+.case-reading {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.case-reading .case-properties {
+  display: grid;
+  grid-template-columns: 0.7fr 1fr 0.8fr 1.2fr;
+  gap: 16px 24px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.case-properties dt {
+  font-size: 12px;
+  margin-bottom: 7px;
+}
+.case-properties dd {
+  font-size: 14px;
+  color: var(--ink);
+  margin: 0;
+}
+.case-properties .tag {
+  font-size: 12px;
+  padding: 4px 8px;
+}
+.case-properties .metadata-link {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.case-document {
+  min-width: 0;
+  padding: 32px 36px 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.case-document .prose {
+  font-size: 15px;
+  line-height: 1.8;
+  max-width: 82ch;
+}
+.case-document .section-title {
+  margin-bottom: 16px;
+}
+.case-document .count {
+  font-size: 12px;
+  padding: 3px 7px;
+}
+.case-document .prose code {
+  font-size: 0.9em;
+}
+.case-document .input-values dd {
+  color: var(--ink);
+}
+.case-document .variants-table td {
+  vertical-align: top;
+}
+.case-document .data-table th {
+  white-space: normal;
+}
+.case-page .page-head {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+}
+.case-page .page-head > div:first-child {
+  min-width: 0;
+  flex: 1 1 280px;
+}
+.case-page .page-actions {
+  flex-wrap: wrap;
+}
+.case-page .page-actions .icon-button {
+  width: 40px;
+  height: 40px;
+}
+.case-page .tabs {
+  margin-bottom: 24px;
+}
+.case-page .icon-button.selected {
+  color: var(--blue-ink);
+  background: var(--accent-soft);
+}
+.discussion-drawer.dialog {
+  position: fixed;
+  z-index: 60;
+  inset: 80px 16px 16px auto;
+  margin: 0;
+  width: min(440px, calc(100vw - 32px));
+  height: calc(100dvh - 96px);
+  max-height: none;
+  max-width: none;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  box-shadow: -8px 12px 56px #09142640;
+}
+.discussion-drawer.activity-drawer {
+  width: min(620px, calc(100vw - 32px));
+}
+.discussion-drawer.dialog::backdrop {
+  background: #09142614;
+  backdrop-filter: none;
+}
+.discussion-drawer > .dialog-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 22px;
+}
+.discussion-drawer .dialog-head {
+  flex-shrink: 0;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.discussion-drawer .dialog-head .icon-button {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+.discussion-drawer .threads-list {
+  margin-top: 12px;
+}
+.discussion-drawer .comment-body {
+  color: var(--ink);
+}
+.discussion-drawer .comment-author .avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+}
+.discussion-drawer .reply-form .input {
+  min-height: 40px;
+}
+.discussion-drawer .new-thread .button {
+  min-height: 40px;
+}
+.discussion-drawer .thread-anchor small {
+  font-size: 12px;
+}
+.discussion-drawer .tiny.button {
+  font-size: 12px;
+  min-height: 32px;
+}
+@media (max-width: 900px) {
+  .case-reading .case-properties {
+    grid-template-columns: 1fr 1fr;
+  }
+  .case-document {
+    padding: 24px 24px 0;
+  }
+}
+@media (max-width: 760px) {
+  .case-document {
+    padding: 22px 16px 0;
+    border-radius: 10px;
+  }
+  .case-reading {
+    gap: 20px;
+  }
+  .case-reading .case-properties {
+    gap: 16px;
+  }
+  .case-document .preconditions {
+    padding: 16px;
+  }
+  .case-page .page-head {
+    align-items: stretch;
+  }
+  .case-page .page-head > div:first-child {
+    flex-basis: auto;
+  }
+  .case-page .page-actions {
+    gap: 6px;
+  }
+  .case-page .page-actions .button {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  .case-document .variants-table td {
+    min-width: 220px;
+  }
+  .discussion-drawer.dialog {
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    border-radius: 0;
+    border: 0;
+  }
+  .discussion-drawer > .dialog-inner {
+    padding: max(18px, env(safe-area-inset-top)) 18px
+      max(18px, env(safe-area-inset-bottom));
+  }
+}
+
+.case-properties .priority {
+  font-size: 13px;
+}
+@media (max-width: 760px) {
+  .case-page .tabs {
+    gap: 12px;
+  }
+}
+
+.discussion-drawer .dialog-head h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.side-panel-scroll,
+.threads-list {
+  overscroll-behavior: contain;
+}
+@media (max-width: 600px) {
+  .discussion-drawer.activity-drawer {
+    width: 100vw;
+  }
+}
+
+/* Discussion drawers share the page; their content scrolls as one independent region. */
+.discussion-drawer .comments-panel {
+  display: block;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding-right: 4px;
+}
+.discussion-drawer .threads-list {
+  overflow: visible;
+}
+.discussion-drawer .new-thread {
+  padding-bottom: 4px;
+}
+
+/* Keep the native history/notification scroll track at the drawer border. */
+.discussion-drawer.activity-drawer > .dialog-inner {
+  padding: 0;
+}
+.activity-drawer .dialog-head {
+  padding: 22px;
+  margin-bottom: 0;
+}
+.activity-drawer .side-panel-scroll {
+  padding: 0 22px 22px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  scrollbar-gutter: stable;
+}
+.activity-drawer .side-panel-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.activity-drawer .side-panel-scroll::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border: 2px solid var(--surface);
+  border-radius: 8px;
+}
+.activity-drawer .side-panel-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+@media (max-width: 760px) {
+  .activity-drawer .dialog-head {
+    padding: max(18px, env(safe-area-inset-top)) 18px 18px;
+  }
+  .activity-drawer .side-panel-scroll {
+    padding: 0 18px max(18px, env(safe-area-inset-bottom));
+  }
+}

@@ -1,0 +1,208 @@
+/* Semantic palette shared by every page, dialog and picker. */
+:root {
+  color-scheme: light;
+  --canvas: #f4f6fa;
+  --surface: #ffffff;
+  --surface-soft: #f5f7fb;
+  --surface-hover: #eaf0f8;
+  --ink: #18233b;
+  --muted: #536078;
+  --line: #dfe5ee;
+  --line-strong: #bec9da;
+  --blue: #3659e3;
+  --blue-hover: #2949cf;
+  --blue-ink: #3154cf;
+  --accent-soft: #edf1ff;
+  --accent-border: #96a9ec;
+  --on-accent: #ffffff;
+  --success: #187457;
+  --success-soft: #eaf6ef;
+  --success-border: #a3ccb9;
+  --danger: #b03349;
+  --danger-soft: #fff0f2;
+  --danger-border: #e6b4bd;
+  --warning: #815518;
+  --warning-soft: #fff5df;
+  --warning-border: #dec28e;
+  --purple: #7542a9;
+  --purple-soft: #f3edfc;
+  --purple-border: #b398d6;
+  --code-surface: #202b40;
+  --code-ink: #e8efff;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #141c2a;
+  --surface: #1c2636;
+  --surface-soft: #222e40;
+  --surface-hover: #2a3950;
+  --ink: #ecf0f8;
+  --muted: #b4bfd2;
+  --line: #354258;
+  --line-strong: #52647f;
+  --blue: #4764d7;
+  --blue-hover: #526fe5;
+  --blue-ink: #a4b7ff;
+  --accent-soft: #2a3554;
+  --accent-border: #637bbd;
+  --success: #85d6b0;
+  --success-soft: #203e35;
+  --success-border: #426b59;
+  --danger: #ffacba;
+  --danger-soft: #472d3a;
+  --danger-border: #855266;
+  --warning: #edca8e;
+  --warning-soft: #413929;
+  --warning-border: #766342;
+  --purple: #cfaff5;
+  --purple-soft: #392f4b;
+  --purple-border: #786291;
+  --code-surface: #111925;
+  --code-ink: #e8efff;
+}
+html {
+  background: var(--canvas);
+}
+body {
+  color: var(--ink);
+  background: var(--canvas);
+}
+dialog,
+select,
+option {
+  background-color: var(--surface);
+  color: var(--ink);
+}
+input,
+textarea {
+  caret-color: var(--blue-ink);
+}
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--blue);
+}
+.button.primary {
+  color: var(--on-accent);
+}
+/* The document canvas differs from the surfaces used for controls. */
+:root {
+  background: var(--canvas);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.profile-settings {
+  max-width: 840px;
+}
+.appearance-settings {
+  margin-bottom: 36px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--line);
+}
+.appearance-settings > p {
+  margin: 10px 0 20px;
+}
+.appearance-settings .theme-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+}
+.theme-option {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  min-width: 0;
+}
+.theme-option:has(:checked) {
+  border-color: var(--blue-ink);
+  box-shadow: 0 0 0 1px var(--blue-ink);
+}
+.theme-option:focus-within {
+  outline: 2px solid var(--blue-ink);
+  outline-offset: 3px;
+}
+.theme-option > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.theme-option input {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+}
+/* Fixed swatches deliberately depict each theme, regardless of the current theme. */
+.theme-preview {
+  height: 80px;
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  padding: 14px 12px 14px 42px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #f2f5fa;
+  color: #b9c5da;
+}
+.theme-preview i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 28px;
+  background: #ffffff;
+  border-right: 1px solid #dfe5ee;
+}
+.theme-preview b {
+  height: 5px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.theme-preview b:last-child {
+  width: 60%;
+}
+.theme-preview.dark {
+  background: #141c2a;
+  color: #52647f;
+}
+.theme-preview.dark i {
+  background: #1c2636;
+  border-color: #354258;
+}
+.theme-preview.system {
+  background: linear-gradient(90deg, #f2f5fa 50%, #141c2a 50%);
+  color: #8394af;
+}
+@media (max-width: 480px) {
+  .theme-options {
+    gap: 8px;
+  }
+  .theme-option {
+    padding: 8px;
+  }
+  .theme-preview {
+    height: 64px;
+    padding-left: 28px;
+  }
+  .theme-preview i {
+    width: 18px;
+  }
+  .theme-option > span:last-child {
+    font-size: 12px;
+    gap: 5px;
+  }
+}
