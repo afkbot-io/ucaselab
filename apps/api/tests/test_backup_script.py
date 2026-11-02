@@ -35,3 +35,25 @@ def test_backup_resumes_only_previously_running_services(tmp_path, dump_fails):
     assert calls[-1] == "compose start api web"
     assert not any("worker" in call for call in calls)
     assert "Backup created" in result.stdout if not dump_fails else "Backup created" not in result.stdout
+
+
+@pytest.mark.parametrize("healthy", [False, True])
+def test_dev_db_waits_for_health_and_propagates_startup_failure(tmp_path, healthy):
+    """The Docker boundary must finish readiness before make allows migrations."""
+    root = Path(__file__).resolve().parents[3]
+    docker = tmp_path / "docker"
+    docker.write_text(
+        '#!/usr/bin/env bash\n'
+        'if [[ " $* " != *" --wait "* ]]; then exit 0; fi\n'
+        'if [[ "$DB_HEALTHY" != 1 ]]; then exit 1; fi\n'
+        'touch "$READY_MARKER"\n'
+    )
+    docker.chmod(0o700)
+    marker = tmp_path / "ready"
+    result = subprocess.run(
+        ["make", "dev-db"], cwd=root, capture_output=True, text=True,
+        env={**os.environ, "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
+             "DB_HEALTHY": str(int(healthy)), "READY_MARKER": str(marker)},
+    )
+    assert (result.returncode == 0) == healthy, result.stderr
+    assert marker.exists() == healthy

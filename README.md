@@ -13,7 +13,7 @@ UCaseLab хранит юзер-кейсы, их версии и результа
 
 ## Быстрый старт
 
-Для новой локальной копии нужны Git, Docker с Compose v2 и Python 3.12–3.14:
+Для новой локальной копии нужны Git, работающий Docker Engine (или Docker Desktop) с Compose v2 и Python 3.12–3.14. Проверьте `git --version`, `docker compose version` и `python3 --version`; Compose должен поддерживать `up --wait`:
 
 ```bash
 git clone https://github.com/afkbot-io/ucaselab.git
@@ -25,7 +25,7 @@ docker compose -f compose.yaml -f compose.dev.yaml -f compose.local.yaml up -d -
 
 `init_env.py` создаёт `.env` с уникальными ключами и правами 0600; существующий файл не перезаписывает. Не добавляйте `.env` в Git. Для существующей установки следуйте [порядку обновления](docs/DEPLOYMENT.md#обновление).
 
-Откройте http://localhost:8080, зарегистрируйтесь и подтвердите адрес через локальную почту Mailpit на http://localhost:8029. Создайте проект: его создатель становится руководителем. Демонстрационные данные не добавляются, письма остаются в Mailpit. Готовность API: http://localhost:8080/api/health/ready.
+Дождитесь успешного ответа http://localhost:8080/api/health/ready (после первой сборки это может занять время); состояние сервисов — `docker compose -f compose.yaml -f compose.dev.yaml -f compose.local.yaml ps`. Откройте http://localhost:8080, зарегистрируйтесь и подтвердите адрес через локальную почту Mailpit на http://localhost:8029. Создайте проект: его создатель становится руководителем. Демонстрационные данные не добавляются, письма остаются в Mailpit.
 
 ## Развёртывание
 
@@ -35,6 +35,8 @@ docker compose -f compose.yaml -f compose.dev.yaml -f compose.local.yaml up -d -
 
 ## Разработка и проверки
 
+Дополнительно нужны [uv 0.10.9](https://docs.astral.sh/uv/getting-started/installation/) (версия CI и API-образа), Python 3.13, Node.js 22.12+ с npm 10 и GNU Make. Vite 7 также поддерживает Node.js 20.19+; контейнер frontend и CI используют Node.js 22. Git и Make не закреплены по версии: нужны обычные `clone` и выполнение целей Makefile. Linux и macOS используют команды ниже; в Windows используйте WSL2 с Docker integration. Убедитесь, что `uv --version`, `node --version`, `npm --version` и `make --version` доступны в текущем терминале. uv может загрузить Python 3.13 при синхронизации.
+
 Из корня локальной копии сгенерируйте `.env`, если его ещё нет, и установите зависимости:
 
 ```bash
@@ -43,9 +45,10 @@ uv sync --frozen --python 3.13
 make dev-db
 make migrate
 npm ci --prefix apps/web
+make skills
 ```
 
-При существующем `.env` пропустите первую команду и проверьте локальные настройки. В отдельных терминалах запустите `make api`, `make worker` и `make web`. Интерфейс: http://localhost:5173, API: http://127.0.0.1:8017, Mailpit: http://localhost:8029. Порты БД и SMTP — 54329 и 10259.
+`make dev-db` ждёт успешного healthcheck PostgreSQL перед возвратом; при ошибке устраните причину до `make migrate`. `make api`, `make worker` и миграции читают локальный `.env`. При существующем `.env` пропустите первую команду и проверьте локальные настройки. В отдельных терминалах запустите `make api`, `make worker` и `make web`. Интерфейс: http://localhost:5173, API: http://127.0.0.1:8017, Mailpit: http://localhost:8029. Порты БД и SMTP — 54329 и 10259. Готовность API: http://127.0.0.1:8017/api/health/ready. Регистрация, подтверждение письма в Mailpit и создание первого проекта выполняются так же, как в быстром старте. `make skills` собирает каталог и архивы навыков для скачивания и MCP; он также входит в `make test`.
 
 - `make test` — тесты, линтеры, типы, документация и сборка.
 - `make test-ui` — браузерные проверки Playwright.

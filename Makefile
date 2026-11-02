@@ -2,7 +2,7 @@
 env:
 	python3 scripts/init_env.py
 dev-db:
-	docker compose -f compose.yaml -f compose.dev.yaml up -d db mailpit
+	docker compose -f compose.yaml -f compose.dev.yaml up -d --wait db mailpit
 api:
 	PYTHONPATH=apps/api uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8017 --reload
 worker:
