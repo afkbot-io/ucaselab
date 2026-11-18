@@ -100,7 +100,7 @@ def authenticate(db: DBSession, request: Request, bearer_only: bool = False) -> 
     authorization = request.headers.get("authorization", "")
     if authorization.startswith("Bearer "):
         raw = authorization[7:]
-        token = db.scalar(select(ApiToken).where(ApiToken.token_hash == digest(raw)))
+        token = db.scalar(select(ApiToken).where(ApiToken.token_hash == digest(raw)).execution_options(populate_existing=True))
         if not token or token.revoked or aware(token.expires_at) <= now():
             fail("UNAUTHENTICATED", "Токен недействителен или истёк", 401)
         user = db.get(User, token.user_id)
@@ -139,7 +139,7 @@ def membership(
 ) -> Membership:
     """Recheck membership, token allowlist, role and archive status on every request."""
     actor.scope("projects:read")
-    if actor.token and project_id not in actor.token.project_ids:
+    if actor.token and actor.token.project_access != "all" and project_id not in actor.token.project_ids:
         fail("NOT_FOUND", "Проект не найден", 404)
     member = db.scalar(
         select(Membership)

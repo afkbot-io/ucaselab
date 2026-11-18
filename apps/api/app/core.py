@@ -46,7 +46,7 @@ def list_projects(
         .join(m.Membership, m.Membership.project_id == m.Project.id)
         .where(m.Membership.user_id == ctx.user_id)
     )
-    if ctx.actor.token:
+    if ctx.actor.token and ctx.actor.token.project_access != "all":
         query = query.where(m.Project.id.in_(ctx.actor.token.project_ids))
     if archived is not None:
         query = query.where(m.Project.archived == archived)
@@ -93,7 +93,14 @@ def create_project(ctx, name: Name, key: str, description: Text = ""):
         )
     )
     if ctx.actor.token:
-        ctx.actor.token.project_ids = [*ctx.actor.token.project_ids, project.id]
+        # The browser editor and project auto-grants serialize on the same live row.
+        token = ctx.db.scalar(
+            select(m.ApiToken).where(m.ApiToken.id == ctx.actor.token.id)
+            .with_for_update().execution_options(populate_existing=True)
+        )
+        if token.project_access == "selected":
+            token.project_ids = [*token.project_ids, project.id]
+            token.access_version += 1
     return fields(project, "name", "key", "version")
 
 

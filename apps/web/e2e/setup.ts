@@ -17,7 +17,9 @@ export default async function setup(config: FullConfig) {
     string,
     { email: string; password: string; id: string }
   > = {};
-  for (const role of actors) {
+  // One pagination-only identity is shared across browsers to stay within the
+  // real public-registration IP budget; its catalogue never grows the owner.
+  for (const role of [...actors, "token-pagination"]) {
     const api = await request.newContext({
       baseURL: config.projects[0].use.baseURL,
     });

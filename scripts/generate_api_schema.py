@@ -6,7 +6,8 @@ import sys
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(root/'apps/api'))
-from app.main import REGISTRY
+from app.main import REGISTRY, TokenCreate, TokenAccessUpdate
 schema={'version':tomllib.loads((root/"pyproject.toml").read_text())["project"]["version"],'transport':'Streamable HTTP','authentication':'Bearer personal token','operations':{name:{'description':op['func'].__doc__,'scope':op['scope'],'role':op['role'],'write':op['write'],'global':op['global_'],'arguments':op['model'].model_json_schema()} for name,op in sorted(REGISTRY.items())}}
+schema['token_management'] = {'authentication': 'Browser session + CSRF; owner only', 'create': TokenCreate.model_json_schema(), 'update_access': TokenAccessUpdate.model_json_schema()}
 (root/'docs/API_SCHEMA.json').write_text(json.dumps(schema,ensure_ascii=False,indent=2)+'\n')
 print(f'Exported {len(REGISTRY)} operation schemas')
