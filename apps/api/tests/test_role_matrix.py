@@ -3,29 +3,35 @@
 import pytest
 from app import models as m
 from app.operations import REGISTRY, dispatch
-from app.security import ROLE_RANK, Actor
+from app.security import ROLE_RANK, SCOPES, Actor
 from fastapi import HTTPException
 
 
+@pytest.mark.parametrize("credential", ["browser", "all"])
 @pytest.mark.parametrize("role", ["developer", "tester", "manager"])
-def test_every_project_operation_denies_lower_roles_before_processing_arguments(db, project, role):
+def test_every_project_operation_denies_lower_roles_before_processing_arguments(db, project, role, credential):
     user = m.User(email=f"{m.uid()}@example.com", name=role, verified=True, password_hash="unused")
     db.add(user)
     db.flush()
     db.add(m.Membership(project_id=project, user_id=user.id, role=role))
     db.flush()
+    actor = Actor(user)
+    if credential == "all":
+        actor.token = m.ApiToken(user_id=user.id, name="All", token_hash="unused", prefix="test",
+                                 scopes=SCOPES, project_ids=[], project_access="all", expires_at=m.now())
     denied = []
     for name, operation in REGISTRY.items():
         if operation["global_"] or ROLE_RANK[role] >= ROLE_RANK[operation["role"]]:
             continue
         with pytest.raises(HTTPException) as error:
-            dispatch(db, Actor(user), name, project, {})
+            dispatch(db, actor, name, project, {})
         assert error.value.status_code == 403, (role, name, error.value.detail)
         denied.append(name)
     assert denied
 
 
-def test_every_operation_requires_its_declared_token_scope(db, owner, project):
+@pytest.mark.parametrize("project_access", ["selected", "all"])
+def test_every_operation_requires_its_declared_token_scope(db, owner, project, project_access):
     for name, operation in REGISTRY.items():
         token = m.ApiToken(
             user_id=owner.user.id,
@@ -33,7 +39,8 @@ def test_every_operation_requires_its_declared_token_scope(db, owner, project):
             token_hash="test",
             prefix="test",
             scopes=[],
-            project_ids=[project],
+            project_ids=[project] if project_access == "selected" else [],
+            project_access=project_access,
             expires_at=m.now(),
         )
         with pytest.raises(HTTPException) as error:

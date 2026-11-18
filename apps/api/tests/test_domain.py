@@ -358,7 +358,8 @@ def test_shared_account_exclusion_and_inconsistent_verdict(call, content):
     assert exc.value.detail["code"] == "RUN_NOT_FINAL"
 
 
-def test_secret_permission_is_separate_from_role(db, project, call):
+@pytest.mark.parametrize("credential", ["browser", "all"])
+def test_secret_permission_is_separate_from_role(db, project, call, credential):
     account = call("create_test_account", name="Защищённый аккаунт")
     user = m.User(
         email="qa-without-secrets@example.com", name="Тестировщик", verified=True, password_hash="unused"
@@ -367,10 +368,15 @@ def test_secret_permission_is_separate_from_role(db, project, call):
     db.flush()
     db.add(m.Membership(project_id=project, user_id=user.id, role="tester"))
     db.flush()
+    actor = Actor(user)
+    if credential == "all":
+        actor.token = m.ApiToken(user_id=user.id, name="All", token_hash="unused", prefix="test",
+                                 scopes=["projects:read", "secrets:read"], project_ids=[],
+                                 project_access="all", expires_at=m.now())
     with pytest.raises(HTTPException) as exc:
         dispatch(
             db,
-            Actor(user),
+            actor,
             "reveal_test_account_secret",
             project,
             {"account_id": account["id"], "reason": "Тест прав"},

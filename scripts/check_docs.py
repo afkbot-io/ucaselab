@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "apps/api"))
-from app.main import REGISTRY
+from app.main import REGISTRY, TokenAccessUpdate, TokenCreate
 from app.version import VERSION
 
 
@@ -24,6 +24,8 @@ def check() -> None:
             target = link.split("#", 1)[0]
             assert not target or (document.parent / target).exists(), (document, link)
     schema = json.loads((ROOT / "docs/API_SCHEMA.json").read_text())
+    assert schema["token_management"]["create"] == TokenCreate.model_json_schema()
+    assert schema["token_management"]["update_access"] == TokenAccessUpdate.model_json_schema()
     assert schema["version"] == VERSION
     assert set(schema["operations"]) == set(REGISTRY)
     contract = (ROOT / "docs/MCP_CONTRACT.md").read_text()

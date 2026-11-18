@@ -109,12 +109,18 @@ class Invitation(Identity, Base):
 
 class ApiToken(Identity, Base):
     __tablename__ = "api_tokens"
+    __table_args__ = (
+        CheckConstraint("project_access IN ('selected', 'all') AND (project_access != 'all' OR json_array_length(project_ids) = 0)", name="ck_token_project_access"),
+        CheckConstraint("access_version >= 1", name="ck_token_access_version"),
+    )
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(100))
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     prefix: Mapped[str] = mapped_column(String(18))
     scopes: Mapped[list] = mapped_column(JSON)
     project_ids: Mapped[list] = mapped_column(JSON)
+    project_access: Mapped[str] = mapped_column(String(20), default="selected", server_default="selected")
+    access_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked: Mapped[bool] = mapped_column(Boolean, default=False)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

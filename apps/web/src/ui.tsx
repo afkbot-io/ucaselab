@@ -195,15 +195,20 @@ export function Form({
   children,
   className = "",
   pendingLabel = "Сохраняем…",
+  errorResetKey,
 }: {
   onSubmit: () => Promise<unknown>;
   children: ReactNode;
   className?: string;
   pendingLabel?: string;
+  errorResetKey?: number;
 }) {
   const [error, setError] = useState("");
   const [pending, set] = useState(false);
   const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (errorResetKey !== undefined) setError("");
+  }, [errorResetKey]);
   useEffect(() => {
     if (error) errorRef.current?.focus();
   }, [error]);
@@ -380,7 +385,7 @@ export function ErrorState({
       title="Не удалось загрузить данные"
       description={error?.message}
       action={
-        <Button variant="secondary" onClick={retry}>
+        <Button type="button" variant="secondary" onClick={retry}>
           Повторить
         </Button>
       }

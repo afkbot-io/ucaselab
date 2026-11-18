@@ -3125,7 +3125,7 @@ h2 {
   width: 94px;
   font-family: Manrope, sans-serif;
 }
-.plan-check,
+/* Interactive checkbox rows need real geometry before native scrolling/clicks. */
 .resource-card {
   content-visibility: auto;
   contain-intrinsic-size: auto 80px;
@@ -5837,4 +5837,46 @@ h2 {
 }
 .draft-merge-actions .button {
   white-space: normal;
+}
+
+.form fieldset.token-project-access {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+.token-project-access legend {
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+.token-project-access .check-label {
+  margin-bottom: 10px;
+}
+.token-project-access .plan-check span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.token-editor-grid.token-editor-access-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.token-table {
+  min-width: 800px;
+  table-layout: fixed;
+}
+.token-table th:nth-child(1),
+.token-table th:nth-child(3) {
+  width: 24%;
+}
+.token-table th:nth-child(2) {
+  width: 30%;
+}
+.token-table th:nth-child(4) {
+  width: 22%;
+}
+
+.token-project-list {
+  max-height: min(320px, 35dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }

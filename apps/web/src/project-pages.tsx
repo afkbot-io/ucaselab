@@ -2,7 +2,7 @@ import { editorDraftKey, isProposalDraft, useEditorDraft, proposalItemIds, remem
 import { ProposalDraftPreview, UnassignedProposalDrafts } from "./draft-preview";
 import { DiscussionButton } from "./discussions";
 import { useTheme } from "./theme";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Link,
   useNavigate,
@@ -36,7 +36,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { action, request } from "./api";
+import { ApiError, action, request } from "./api";
 import { CasePicker, LabelPicker, type Choice } from "./pickers";
 import { useProject, useSession } from "./context";
 import type {
@@ -46,6 +46,7 @@ import type {
   Member,
   Proposal,
   ProposalItem,
+  Project,
   Role,
   Specification,
   UseCase,
@@ -3033,10 +3034,25 @@ type TokenInfo = {
   prefix: string;
   scopes: string[];
   project_ids: string[];
+  project_access: "selected" | "all";
+  access_version: number;
   expires_at: string;
   revoked: boolean;
   last_used_at: string | null;
 };
+async function loadTokenProjectCatalogue() {
+  const items = new Map<string, Project>();
+  let offset = 0;
+  for (;;) {
+    const page = await action<{ items: Project[]; next_offset: number | null }>(
+      "list_projects", null, { limit: 500, offset },
+    );
+    for (const project of page.items) items.set(project.id, project);
+    if (page.next_offset === null) return { items: [...items.values()] };
+    offset = page.next_offset;
+  }
+}
+
 export function ProfilePage() {
   const session = useSession();
   const { theme, setTheme } = useTheme();
@@ -3053,12 +3069,14 @@ export function ProfilePage() {
     });
   const [name, setName] = useState(session.user.name),
     [create, setCreate] = useState(false),
+    [editing, setEditing] = useState<TokenInfo | null>(null),
     [raw, setRaw] = useState(""),
     [show, setShow] = useState(false);
   const tokens = useLoad(
     () => request<{ items: TokenInfo[] }>("/tokens"),
     [session.user.id],
   );
+  const tokenProjects = useLoad(loadTokenProjectCatalogue, [session.user.id, tab]);
   const navigate = useNavigate();
   return (
     <div className="page">
@@ -3239,8 +3257,8 @@ export function ProfilePage() {
               />
             </div>
           ) : (
-            <div className="panel table-scroll">
-              <table className="data-table">
+            <div className="panel table-scroll" role="region" aria-label="Персональные токены" tabIndex={0}>
+              <table className="data-table token-table">
                 <thead>
                   <tr>
                     <th>Токен</th>
@@ -3257,15 +3275,17 @@ export function ProfilePage() {
                         <p>
                           <small className="mono">{t.prefix}…</small>
                         </p>
-                        {t.revoked && <Badge status="cancelled">Отозван</Badge>}
+                        {t.revoked ? <Badge status="cancelled">Отозван</Badge> : new Date(t.expires_at) <= new Date() ? <Badge status="cancelled">Истёк</Badge> : null}
                       </td>
                       <td>
                         <small>
-                          {t.project_ids
+                          {t.project_access === "all" ? "Все проекты" : t.project_ids
                             .map(
                               (id) =>
-                                session.projects.find((p) => p.id === id)
-                                  ?.name || "Недоступный проект",
+                                (tokenProjects.data?.items || session.projects).find((p) => p.id === id)
+                                  ?.name || (tokenProjects.loading || tokenProjects.error
+                                    ? "Выбранный проект — каталог временно недоступен"
+                                    : "Недоступный проект"),
                             )
                             .join(", ") || "Без проектов"}
                         </small>
@@ -3281,6 +3301,9 @@ export function ProfilePage() {
                         </small>
                       </td>
                       <td>
+                        {!t.revoked && new Date(t.expires_at) > new Date() && (
+                          <Button variant="ghost" onClick={() => setEditing(t)}>Изменить доступ</Button>
+                        )}
                         {!t.revoked && (
                           <AsyncButton
                             variant="ghost"
@@ -3306,12 +3329,23 @@ export function ProfilePage() {
       {create && (
         <TokenForm
           close={() => setCreate(false)}
+          knownProjects={tokenProjects.data?.items || session.projects}
+          projectsLoaded={(items) => tokenProjects.setData({ items })}
           created={(token) => {
             setCreate(false);
             setRaw(token);
             tokens.reload();
+            tokenProjects.reload();
           }}
         />
+      )}
+      {editing && (
+        <TokenForm token={editing} close={() => setEditing(null)} created={() => {}}
+          knownProjects={tokenProjects.data?.items || session.projects}
+          projectsLoaded={(items) => tokenProjects.setData({ items })}
+          saved={() => {
+          setEditing(null); tokens.reload(); tokenProjects.reload();
+        }} />
       )}
       {raw && (
         <Dialog
@@ -3363,16 +3397,34 @@ export function ProfilePage() {
 function TokenForm({
   close,
   created,
+  token,
+  saved,
+  knownProjects,
+  projectsLoaded,
 }: {
   close: () => void;
   created: (raw: string) => void;
+  token?: TokenInfo;
+  saved?: () => void;
+  knownProjects: Project[];
+  projectsLoaded: (items: Project[]) => void;
 }) {
-  const { projects } = useSession();
+  const accessRef = useRef<HTMLFieldSetElement>(null);
+  const catalogue = useLoad(async () => {
+    const result = await loadTokenProjectCatalogue();
+    projectsLoaded(result.items);
+    return result;
+  }, []);
+  const projects = catalogue.data?.items || knownProjects;
+  const cataloguePending = catalogue.loading || !!catalogue.error;
+  const [mode, setMode] = useState<"selected" | "all">(token?.project_access || "selected");
+  const [version, setVersion] = useState(token?.access_version || 1);
+  const [conflict, setConflict] = useState(false);
   const selectedProject = useProject()?.project;
   const [name, setName] = useState(""),
     [days, setDays] = useState(90),
     [projectIds, setProjects] = useState<string[]>(
-      selectedProject
+      token ? token.project_ids : selectedProject
         ? [selectedProject.id]
         : projects
             .filter((p) => !p.archived)
@@ -3408,22 +3460,37 @@ function TokenForm({
     full: data.data?.available_scopes || [],
   };
   return (
-    <Dialog title="Новый MCP-токен" onClose={close} wide>
+    <Dialog title={token ? "Изменить доступ" : "Новый MCP-токен"} onClose={close} wide>
       <Form
+        errorResetKey={version}
         onSubmit={async () => {
+          if (token) {
+            try {
+              await request("/tokens/" + token.id, {
+                method: "PATCH", body: JSON.stringify({ project_access: mode,
+                  project_ids: mode === "all" ? [] : projectIds, expected_version: version }),
+              });
+              saved?.();
+            } catch (error) {
+              if (error instanceof ApiError && error.code === "VERSION_CONFLICT") setConflict(true);
+              throw error;
+            }
+            return;
+          }
           const result = await request<{ token: string }>("/tokens", {
             method: "POST",
             body: JSON.stringify({
               name,
               expires_days: days,
-              project_ids: projectIds,
+              project_access: mode,
+              project_ids: mode === "all" ? [] : projectIds,
               scopes,
             }),
           });
           created(result.token);
         }}
       >
-        <div className="field-row">
+        {!token && <div className="field-row">
           <Field label="Название">
             <input
               autoFocus
@@ -3444,25 +3511,41 @@ function TokenForm({
               <option value={365}>365 дней</option>
             </select>
           </Field>
-        </div>
-        <div className="token-editor-grid">
-          <div>
+        </div>}
+        <div className={token ? "token-editor-grid token-editor-access-only" : "token-editor-grid"}>
+          <fieldset className="token-project-access" ref={accessRef}>
+            <legend>Доступ к проектам</legend>
+            {([ ["selected", "Выбранные проекты"], ["all", "Все проекты"] ] as const).map(([value, label]) => (
+              <label className="check-label" key={value}><input type="radio" name="project-access" value={value}
+                checked={mode === value} onChange={() => setMode(value)} />{label}</label>
+            ))}
+            <p className="settings-hint">Все проекты включают доступные вам будущие проекты. Членство, роли и разрешения токена проверяются при каждом вызове.</p>
+            {catalogue.loading ? <Loading /> : catalogue.error ? <ErrorState error={catalogue.error} retry={catalogue.reload} /> : null}
+            {mode === "selected" && <>
             <h3>Доступные проекты</h3>
-            <p className="settings-hint">Роль проверяется при каждом вызове.</p>
+            <p className="settings-hint">{token && !projectIds.length ? "Проекты не выбраны: токен не получит доступ ни к одному проекту." : "Выберите один или несколько проектов."}</p>
+            {!catalogue.loading && !catalogue.error && !projects.some(p => !p.archived) && <p className="settings-hint">Нет доступных активных проектов. Режим «Все проекты» включит проекты, к которым вы получите доступ позднее.</p>}
+            <div className="token-project-list" role="region" aria-label="Список проектов" aria-busy={catalogue.loading} tabIndex={0}>
             {projects
               .filter((p) => !p.archived)
               .map((p) => (
                 <label className="plan-check" key={p.id}>
                   <input
                     type="checkbox"
+                    disabled={catalogue.loading}
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                    }}
+                    onClick={(event) => {
+                      event.currentTarget.focus({ preventScroll: true });
+                    }}
                     checked={projectIds.includes(p.id)}
-                    onChange={(e) =>
-                      setProjects((s) =>
-                        e.target.checked
-                          ? [...s, p.id]
-                          : s.filter((id) => id !== p.id),
-                      )
-                    }
+                    onChange={(event) => {
+                      const checked = event.currentTarget.checked;
+                      setProjects((ids) => checked
+                        ? [...ids, p.id]
+                        : ids.filter((id) => id !== p.id));
+                    }}
                   />
                   <span>
                     <strong>{p.name}</strong>
@@ -3470,8 +3553,23 @@ function TokenForm({
                   </span>
                 </label>
               ))}
-          </div>
-          <div>
+            {projectIds.filter(id => !projects.some(p => p.id === id && !p.archived)).map(id => (
+              <label className="plan-check" key={id}><input type="checkbox" checked disabled={catalogue.loading}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                }}
+                onClick={(event) => {
+                  event.currentTarget.focus({ preventScroll: true });
+                }}
+                onChange={() => setProjects(ids => ids.filter(value => value !== id))} />
+                <span>{projects.find(p => p.id === id)?.name || (cataloguePending ? "Выбранный проект" : "Недоступный проект")}
+                  <small>{cataloguePending ? "Каталог временно недоступен" : "Проект недоступен; можно убрать из доступа"}</small>
+                </span></label>
+            ))}
+            </div>
+            </>}
+          </fieldset>
+          {!token && <div>
             <h3>Разрешения токена</h3>
             <div className="inline scope-presets">
               {[
@@ -3480,7 +3578,7 @@ function TokenForm({
                 ["tester", "Тестирование"],
                 ["developer", "Разработка"],
                 ["review", "Предложения"],
-                ["full", "Все"],
+                ["full", "Все разрешения"],
               ].map(([key, label]) => (
                 <button
                   key={key}
@@ -3508,9 +3606,19 @@ function TokenForm({
                 </label>
               ))}
             </div>
-          </div>
+          </div>}
         </div>
-        {scopes.includes("secrets:read") && (
+        {token && <p className="settings-hint">Секрет, разрешения и срок действия токена сохраняются.</p>}
+        {conflict && <div className="note">Настройки изменились. Ваш выбор сохранён в форме.
+          <AsyncButton type="button" variant="secondary" onAction={async () => {
+            const latest = await request<{ items: TokenInfo[] }>("/tokens");
+            const current = latest.items.find(item => item.id === token?.id);
+            if (!current) throw new Error("Токен не найден");
+            setMode(current.project_access); setProjects(current.project_ids); setVersion(current.access_version); setConflict(false);
+            accessRef.current?.querySelector<HTMLInputElement>(`input[type="radio"][value="${current.project_access}"]`)?.focus({ preventScroll: true });
+          }}>Загрузить актуальный доступ</AsyncButton>
+        </div>}
+        {!token && scopes.includes("secrets:read") && (
           <div className="note">
             Агент сможет получить пароли тестовых аккаунтов, если роль участника
             тоже позволяет это.
@@ -3520,8 +3628,8 @@ function TokenForm({
           <Button type="button" variant="secondary" onClick={close}>
             Отмена
           </Button>
-          <Button type="submit" disabled={!scopes.length}>
-            Создать токен
+          <Button type="submit" disabled={!scopes.length || catalogue.loading || !!catalogue.error || conflict || (!token && mode === "selected" && !projectIds.length)}>
+            {token ? "Сохранить доступ" : "Создать токен"}
           </Button>
         </div>
       </Form>

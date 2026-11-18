@@ -76,7 +76,7 @@ def activity_query(ctx, all_projects=False):
     )
     if not all_projects:
         query = query.where(a.project_id == ctx.project_id)
-    if ctx.actor.token:
+    if ctx.actor.token and ctx.actor.token.project_access != "all":
         query = query.where(a.project_id.in_(ctx.actor.token.project_ids))
     return query
 

@@ -7090,5 +7090,91 @@
         "type": "object"
       }
     }
+  },
+  "token_management": {
+    "authentication": "Browser session + CSRF; owner only",
+    "create": {
+      "additionalProperties": false,
+      "properties": {
+        "project_access": {
+          "default": "selected",
+          "enum": [
+            "selected",
+            "all"
+          ],
+          "title": "Project Access",
+          "type": "string"
+        },
+        "project_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 200,
+          "title": "Project Ids",
+          "type": "array"
+        },
+        "name": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "scopes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 40,
+          "minItems": 1,
+          "title": "Scopes",
+          "type": "array"
+        },
+        "expires_days": {
+          "default": 90,
+          "maximum": 365,
+          "minimum": 1,
+          "title": "Expires Days",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "scopes"
+      ],
+      "title": "TokenCreate",
+      "type": "object"
+    },
+    "update_access": {
+      "additionalProperties": false,
+      "properties": {
+        "project_access": {
+          "enum": [
+            "selected",
+            "all"
+          ],
+          "title": "Project Access",
+          "type": "string"
+        },
+        "project_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 200,
+          "title": "Project Ids",
+          "type": "array"
+        },
+        "expected_version": {
+          "minimum": 1,
+          "title": "Expected Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "project_access",
+        "project_ids",
+        "expected_version"
+      ],
+      "title": "TokenAccessUpdate",
+      "type": "object"
+    }
   }
 }
